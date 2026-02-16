@@ -1,0 +1,1738 @@
+﻿<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سامانه ارزیابی مدارس</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary: #10b981;
+            --accent: #ec4899;
+            --bg: #f9fafb;
+            --card: #ffffff;
+            --text: #111827;
+            --border: #e5e7eb;
+            --shadow: rgba(0,0,0,0.05);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        body { font-family: 'Vazirmatn', sans-serif; direction: rtl; text-align: right; margin: 0; padding: 0; background: var(--bg); color: var(--text); transition: var(--transition); min-height: 100vh; position: relative; overflow-x: hidden; }
+        #hamburger { position: fixed; top: 24px; right: 24px; font-size: 32px; cursor: pointer; color: var(--primary); z-index: 1001; transition: var(--transition); border-radius: 50%; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; background: var(--card); box-shadow: 0 4px 16px var(--shadow); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        #hamburger:hover { transform: rotate(180deg) scale(1.1); box-shadow: 0 8px 24px var(--shadow); }
+        #menu { position: fixed; top: 100px; right: 24px; background: var(--card); border-radius: 24px; box-shadow: 0 16px 48px var(--shadow); padding: 32px; display: none; z-index: 1000; min-width: 280px; border: 1px solid var(--border); transition: var(--transition); animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        #menu ul { list-style: none; padding: 0; margin: 0; }
+        #menu li { padding: 20px 28px; cursor: pointer; border-radius: 16px; transition: var(--transition); font-weight: 600; font-size: 18px; display: flex; align-items: center; gap: 16px; position: relative; overflow: hidden; }
+        #menu li:before { content: ''; position: absolute; top: 0; right: 0; width: 0; height: 100%; background: var(--primary); transition: var(--transition); z-index: -1; }
+        #menu li:hover { color: white; transform: translateX(-10px); }
+        #menu li:hover:before { width: 100%; }
+        .section { padding: 48px; max-width: 1520px; margin: 48px auto; background: var(--card); border-radius: 28px; box-shadow: 0 16px 48px var(--shadow); transition: var(--transition); border: 1px solid var(--border); position: relative; overflow: hidden; animation: slideUp 0.5s; }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        form { display: grid; gap: 24px; }
+        input, select, textarea { width: 100%; padding: 18px; box-sizing: border-box; border: 1px solid var(--border); border-radius: 16px; transition: var(--transition); font-size: 16px; background: var(--bg); box-shadow: inset 0 2px 8px var(--shadow); }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 5px rgba(59,130,246,0.2); }
+        button { padding: 18px 32px; background: var(--primary); color: white; border: none; border-radius: 16px; cursor: pointer; transition: var(--transition); font-weight: 600; font-size: 18px; box-shadow: 0 8px 24px rgba(59,130,246,0.3); }
+        button:hover { background: var(--primary-dark); transform: translateY(-5px); box-shadow: 0 12px 32px rgba(59,130,246,0.4); }
+        .table-wrapper { overflow: auto; max-height: 650px; border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 8px 24px var(--shadow); overflow-x: auto; max-width: 100%; }
+        table { width: 100%; border-collapse: collapse; font-size: 15px; }
+        th, td { border: 1px solid var(--border); padding: 18px; text-align: right; transition: var(--transition); }
+        th { background: rgba(59,130,246,0.05); position: sticky; top: 0; z-index: 1; font-weight: 700; }
+        canvas.signature { border: 2px dashed var(--border); border-radius: 20px; width: 340px; height: 190px; background: var(--bg); box-shadow: 0 4px 16px var(--shadow); }
+        footer { text-align: center; padding: 28px; background: var(--card); position: fixed; bottom: 0; width: 100%; box-shadow: 0 -12px 32px var(--shadow); font-size: 16px; color: #6b7280; border-top: 1px solid var(--border); transition: var(--transition); }
+        .companion { display: grid; grid-template-columns: 1fr 1fr 2fr auto; gap: 18px; align-items: end; border: 1px solid var(--border); padding: 24px; border-radius: 20px; margin-bottom: 18px; background: rgba(59,130,246,0.02); box-shadow: 0 4px 16px var(--shadow); }
+        #axes table { width: 100%; border-collapse: separate; border-spacing: 0 14px; }
+        #axes tbody tr { background: rgba(59,130,246,0.03); border-radius: 16px; box-shadow: 0 2px 12px var(--shadow); }
+        #axes td { padding: 16px; background: transparent; }
+        .score-display { font-size: 28px; font-weight: 700; color: var(--primary); text-align: center; margin: 24px 0; padding: 24px; background: rgba(59,130,246,0.05); border-radius: 20px; box-shadow: 0 4px 16px var(--shadow); transition: var(--transition); }
+        .score-display:hover { transform: scale(1.02); }
+        #location { margin-top: 10px; color: var(--secondary); font-weight: bold; }
+        #audioPlayer { margin-top: 10px; width: 100%; }
+        #photoPreview { margin-top: 10px; max-width: 200px; border-radius: 8px; box-shadow: 0 2px 8px var(--shadow); }
+        #map { height: 300px; width: 100%; margin-top: 10px; }
+        @media (max-width: 1024px) { .section { padding: 32px; margin: 32px; } }
+        @media (max-width: 768px) { .section { padding: 24px; margin: 24px; } canvas.signature { width: 100%; height: 160px; } .companion { grid-template-columns: 1fr; } }
+        @media (max-width: 480px) { #hamburger { width: 56px; height: 56px; font-size: 28px; } #menu { top: 90px; right: 12px; padding: 20px; } }
+    </style>
+</head>
+<body>
+    <div id="login" style="display: block;">
+        <div class="section">
+            <h1 style="text-align: center; font-size: 36px; margin-bottom: 48px; color: var(--primary);">ورود به سامانه ارزیابی مدارس</h1>
+            <form id="loginForm" style="max-width: 560px; margin: 0 auto;">
+                <label style="font-size: 20px; margin-bottom: 10px; display: block;">نام کاربری</label>
+                <input id="username" type="text" required placeholder="نام کاربری خود را وارد کنید">
+                <label style="font-size: 20px; margin-bottom: 10px; display: block; margin-top: 24px;">رمز عبور</label>
+                <input id="password" type="password" required placeholder="رمز عبور خود را وارد کنید">
+                <button type="button" onclick="login()" style="width: 100%; margin-top: 48px; padding: 20px; font-size: 20px;">ورود</button>
+            </form>
+        </div>
+    </div>
+    <div id="app" style="display:none;">
+        <div id="hamburger">☰</div>
+        <nav id="menu">
+            <ul>
+                <li id="dashboard">🛡️ داشبورد</li>
+                <li id="users">👥 مدیریت کاربران</li>
+                <li id="formBuilder">🛠️ سازنده فرم</li>
+                <li id="evaluation">📝 ارزیابی</li>
+                <li id="reports">📊 گزارش‌ها</li>
+                <li id="analytics">🔍 تحلیل‌ها</li>
+                <li id="ranking">🏆 رتبه‌بندی</li>
+                <li id="pdf">📄 خروجی PDF</li>
+                <li id="logout">🚪 خروج</li>
+            </ul>
+        </nav>
+        <div id="dashboard-section" class="section" style="display:none;">
+            <h1>🛡️ داشبورد</h1>
+            <p>خوش آمدید! وضعیت کلی سیستم را مشاهده کنید.</p>
+            <div id="stats">
+                <h2>آمار سیستم</h2>
+                <p id="userCount"></p>
+                <p id="evalCount"></p>
+                <p id="avgScore"></p>
+                <p id="statusSummary"></p>
+            </div>
+        </div>
+        <div id="users-section" class="section" style="display:none;">
+            <h1>👥 مدیریت کاربران</h1>
+            <form id="userForm">
+                <input id="firstName" placeholder="نام" required>
+                <input id="lastName" placeholder="نام خانوادگی" required>
+                <input id="fatherName" placeholder="نام پدر">
+                <input id="personnelCode" placeholder="کد پرسنلی (کلید منحصر به فرد)" required>
+                <input id="nationalCode" placeholder="کد ملی">
+                <select id="role" required><option value="SUPER_ADMIN">سوپر ادمین</option><option value="ADMIN">ادمین</option><option value="EVALUATOR">ارزیاب</option></select>
+                <input id="username" placeholder="نام کاربری" required>
+                <input id="password" type="password" placeholder="رمز عبور" required>
+                <select id="status" required><option value="active">فعال</option><option value="inactive">غیرفعال</option></select>
+                <button type="button" onclick="saveUser()">ذخیره</button>
+            </form>
+            <input id="searchInputUsers" type="text" placeholder="جستجو...">
+            <div class="table-wrapper">
+                <table id="usersTable"><thead><tr><th>نام</th><th>کد پرسنلی</th><th>نقش</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody></tbody></table>
+            </div>
+            <button onclick="exportUsersToExcel()">خروجی اکسل کاربران</button>
+            <button onclick="exportUsersToJson()">خروجی JSON کاربران</button>
+            <input type="file" id="importUsersJson" accept=".json" onchange="importUsersFromJson()">
+            <button onclick="document.getElementById('importUsersJson').click()">وارد کردن JSON کاربران</button>
+        </div>
+        <div id="formBuilder-section" class="section" style="display:none;">
+            <h1>🛠️ سازنده فرم</h1>
+            <form id="criterionForm">
+                <input id="title" placeholder="عنوان" required>
+                <input id="axis" placeholder="محور (دسته‌بندی)" required>
+                <input id="weight" type="number" placeholder="وزن" required min="1">
+                <select id="enabled" required><option value="true">فعال</option><option value="false">غیرفعال</option></select>
+                <button type="button" onclick="saveCriterion()">ذخیره</button>
+            </form>
+            <input id="searchInputCriteria" type="text" placeholder="جستجو...">
+            <button onclick="saveCriteriaOrder()">ذخیره ترتیب</button>
+            <div class="table-wrapper">
+                <table id="criteriaTable"><thead><tr><th>عنوان</th><th>محور</th><th>وزن</th><th>فعال</th><th>عملیات</th></tr></thead><tbody id="sortableCriteria"></tbody></table>
+            </div>
+            <button onclick="exportCriteriaToJson()">خروجی JSON معیارها</button>
+            <input type="file" id="importCriteriaJson" accept=".json" onchange="importCriteriaFromJson()">
+            <button onclick="document.getElementById('importCriteriaJson').click()">وارد کردن JSON معیارها</button>
+        </div>
+        <div id="evaluation-section" class="section" style="display:none;">
+            <h1>📝 ارزیابی</h1>
+            <div id="evaluationForm">
+                <h2>اطلاعات مدرسه</h2>
+                <table id="evaluationTable">
+                    <tr><td>نوع مدیریت</td><td><select id="managementType" required><option>نوع مدیریت</option><option>دولتی</option><option>خصوصی</option></select></td></tr>
+                    <tr><td>نام مدرسه</td><td><input id="schoolName" placeholder="نام مدرسه" required></td></tr>
+                    <tr><td>جنسیت</td><td><select id="gender" required><option>جنسیت</option><option value="boy">پسر</option><option value="girl">دختر</option><option value="mixed">مختلط</option></select></td></tr>
+                    <tr><td>کد مدرسه</td><td><input id="schoolCode" placeholder="کد مدرسه" required></td></tr>
+                    <tr><td>نوع منطقه</td><td><select id="areaType" required><option>نوع منطقه</option><option>شهری</option><option>روستایی</option></select></td></tr>
+                    <tr><td>نام مدیر</td><td><input id="managerName" placeholder="نام مدیر" required></td></tr>
+                    <tr><td>کد پرسنلی</td><td><input id="personnelCode" placeholder="کد پرسنلی" required></td></tr>
+                    <tr><td>تلفن</td><td><input id="phone" placeholder="تلفن" required></td></tr>
+                    <tr><td>مدرک تحصیلی</td><td><input id="educationDegree" placeholder="مدرک تحصیلی" required></td></tr>
+                    <tr><td>سنوات خدمت</td><td><input id="serviceYears" type="number" placeholder="سنوات خدمت" required></td></tr>
+                    <tr><td>سنوات مدیریت</td><td><input id="managementYears" type="number" placeholder="سنوات مدیریت" required></td></tr>
+                    <tr><td>تعداد دانش آموزان</td><td><input id="studentCount" type="number" placeholder="تعداد دانش آموزان" required></td></tr>
+                    <tr><td>تعداد پرسنل</td><td><input id="staffCount" type="number" placeholder="تعداد پرسنل" required></td></tr>
+                    <tr><td>نوع دوره</td><td><label><input type="radio" name="courseType" value="کودکستان">کودکستان</label><label><input type="radio" name="courseType" value="ابتدایی">ابتدایی</label><label><input type="radio" name="courseType" value="متوسطه اول">متوسطه اول</label><label><input type="radio" name="courseType" value="متوسطه دوم">متوسطه دوم</label><label><input type="radio" name="courseType" value="هنرستان">هنرستان</label><label><input type="radio" name="courseType" value="کانون">کانون</label><label><input type="radio" name="courseType" value="دارالقرآن">دارالقرآن</label><label><input type="radio" name="courseType" value="استثنائات">استثنائات</label><label><input type="radio" name="courseType" value="ناحیه">ناحیه</label><label><input type="radio" name="courseType" value="استان">استان</label><label><input type="radio" name="courseType" value="سایر">سایر</label></td></tr>
+                    <tr><td>تاریخ بازدید</td><td><input id="visitDate" type="date" required><span id="shamsiDate" style="margin-right: 20px; font-weight: bold; color: var(--primary);"></span></td></tr>
+                </table>
+                <h2>محورهای ارزیابی</h2>
+                <div class="score-display" id="finalScoreDisplay">نمره نهایی: ۰</div>
+                <div id="axes">
+                    <select id="axisSelect" onchange="loadCriteriaForAxis(this.value)">
+                        <option value="">انتخاب محور</option>
+                    </select>
+                    <table>
+                        <thead><tr><th style="width:60px;">فعال</th><th>عنوان (محور)</th><th style="width:120px;">نمره</th><th style="width:300px;">یادداشت</th></tr></thead>
+                        <tbody id="criteriaBody"></tbody>
+                    </table>
+                </div>
+                <h2>لوکیشن, صدا و عکس</h2>
+                <button onclick="getLocation()">ثبت لوکیشن</button>
+                <p id="location"></p>
+                <div id="map"></div>
+                <button onclick="startRecording()">شروع ضبط صدا</button>
+                <button onclick="stopRecording()">توقف ضبط صدا</button>
+                <audio id="audioPlayer" controls></audio>
+                <input type="file" id="photoUpload" accept="image/*" onchange="previewPhoto()">
+                <img id="photoPreview" src="" alt="عکس ارزیابی">
+                <h2>امضاها</h2>
+                <div>امضای بازرس: <canvas id="inspectorSignature" class="signature"></canvas></div>
+                <div>امضای مدیر: <canvas id="managerSignature" class="signature"></canvas></div>
+                <h3>امضاهای همراهان</h3>
+                <div id="companions"></div>
+                <button onclick="addCompanion()">اضافه کردن همراه</button>
+                <button onclick="clearSignatures()">پاک کردن امضاها</button>
+                <button onclick="manualSaveEvaluation()">ذخیره دستی</button>
+            </div>
+            <input id="searchInputEvaluations" type="text" placeholder="جستجو...">
+            <h2>جدول ارزیابی‌های ذخیره‌شده</h2>
+            <div class="table-wrapper">
+                <table id="evaluationsTable"><thead><tr><th>نام مدیر</th><th>کد پرسنلی</th><th>نام مدرسه</th><th>نوع مدیریت</th><th>نوع دوره</th><th>نمره نهایی</th><th>ذخیره‌شده در</th><th>عملیات</th></tr></thead><tbody></tbody></table>
+            </div>
+            <button onclick="exportEvaluationsToExcel()">خروجی اکسل ارزیابی‌ها</button>
+            <button onclick="exportEvaluationsToJson()">خروجی JSON ارزیابی‌ها</button>
+            <input type="file" id="importEvaluationsJson" accept=".json" onchange="importEvaluationsFromJson()">
+            <button onclick="document.getElementById('importEvaluationsJson').click()">وارد کردن JSON ارزیابی‌ها</button>
+        </div>
+        <div id="reports-section" class="section" style="display:none;">
+            <h1>📊 گزارش‌ها</h1>
+            <input id="reportFilter" type="text" placeholder="فیلتر...">
+            <select id="reportSort">
+                <option value="score_desc">نمره نزولی</option>
+                <option value="score_asc">نمره صعودی</option>
+                <option value="management">نوع مدیریت</option>
+                <option value="name_asc">نام الفبایی صعودی</option>
+                <option value="name_desc">نام الفبایی نزولی</option>
+            </select>
+            <select id="reportGenderFilter"><option value="">جنسیت</option></select>
+            <select id="reportAreaFilter"><option value="">نوع منطقه</option></select>
+            <select id="reportCourseFilter"><option value="">نوع دوره</option></select>
+            <button onclick="applyReportFilterAndSort()">اعمال</button>
+            <button onclick="exportReportsToExcel()">خروجی اکسل</button>
+            <button onclick="exportReportsToPdf()">خروجی PDF</button>
+            <input id="searchInputReports" type="text" placeholder="جستجو...">
+            <div class="table-wrapper">
+                <table id="reportsTable"><thead><tr><th>نام مدیر</th><th>کد پرسنلی</th><th>نام مدرسه</th><th>نوع مدیریت</th><th>نوع دوره</th><th>نمره نهایی</th><th>تاریخ</th></tr></thead><tbody></tbody></table>
+            </div>
+        </div>
+        <div id="analytics-section" class="section" style="display:none;">
+            <h1>🔍 تحلیل‌ها</h1>
+            <select id="selectEvalForAnalysis" onchange="loadSingleAnalytics(this.value)">
+                <option value="">انتخاب ارزیابی</option>
+            </select>
+            <canvas id="barChart" style="margin-bottom: 30px;"></canvas>
+            <canvas id="radarChart" style="margin-bottom: 30px;"></canvas>
+            <canvas id="trendChart" style="margin-bottom: 30px;"></canvas>
+            <canvas id="comparisonChart" style="margin-bottom: 30px;"></canvas>
+            <div id="smartAnalysis"></div>
+        </div>
+        <div id="ranking-section" class="section" style="display:none;">
+            <h1>🏆 رتبه‌بندی</h1>
+            <div id="rankingFilters">
+                <select id="rankManagementType"><option value="">نوع مدیریت</option></select>
+                <select id="rankCourseType"><option value="">نوع دوره</option></select>
+                <select id="rankGender"><option value="">جنسیت</option></select>
+                <select id="rankAreaType"><option value="">نوع منطقه</option></select>
+                <button onclick="applyRankingFilters()">اعمال فیلتر</button>
+                <button onclick="exportRankingToExcel()">خروجی اکسل</button>
+                <button onclick="printRanking()">پرینت</button>
+            </div>
+            <div class="table-wrapper">
+                <table id="rankingTable"><thead><tr><th>نام مدیر</th><th>کد پرسنلی</th><th>نام مدرسه</th><th>نمره نهایی</th></tr></thead><tbody></tbody></table>
+            </div>
+        </div>
+        <div id="pdf-section" class="section" style="display:none;">
+            <h1>📄 خروجی PDF</h1>
+            <input id="searchInputPdf" type="text" placeholder="جستجو...">
+            <div class="table-wrapper">
+                <table id="pdfTable"><thead><tr><th>نام مدیر</th><th>کد پرسنلی</th><th>نام مدرسه</th><th>عملیات</th></tr></thead><tbody></tbody></table>
+            </div>
+        </div>
+        <footer>سازنده: حسین هادی پور 🔨</footer>
+    </div>
+    <script>
+        let db;
+        let currentUser;
+        let currentEvaluation = {};
+        let editMode = false;
+        let inspectorSigPad, managerSigPad;
+        let companionSigPads = [];
+        let debounceTimer;
+        let companionCount = 0;
+        let criteriaOrder = [];
+        let recorder, audioChunks;
+        let recordingTimer;
+        let map;
+        let allEvals = [];
+        let axisCriteria = {}; // برای گروه‌بندی معیارها بر اساس محور
+
+        function initDB() {
+            const request = indexedDB.open('SchoolEvalDB', 4);
+            request.onupgradeneeded = e => {
+                db = e.target.result;
+                if (!db.objectStoreNames.contains('users')) db.createObjectStore('users', {keyPath: 'personnelCode'});
+                if (!db.objectStoreNames.contains('criteria')) db.createObjectStore('criteria', {keyPath: 'id', autoIncrement: true});
+                if (!db.objectStoreNames.contains('evaluations')) db.createObjectStore('evaluations', {keyPath: 'id', autoIncrement: true});
+                if (!db.objectStoreNames.contains('logs')) db.createObjectStore('logs', {keyPath: 'id', autoIncrement: true});
+                if (!db.objectStoreNames.contains('criteriaOrder')) db.createObjectStore('criteriaOrder', {keyPath: 'id'});
+            };
+            request.onsuccess = e => {
+                db = e.target.result;
+                initDefaultUsers();
+                loadCriteriaOrder();
+            };
+        }
+
+        async function initDefaultUsers() {
+            const users = [
+                {
+                    firstName: 'Super',
+                    lastName: 'Admin',
+                    fatherName: '',
+                    personnelCode: '1',
+                    nationalCode: '',
+                    role: 'SUPER_ADMIN',
+                    username: '1',
+                    password: '1',
+                    status: 'active'
+                },
+                {
+                    firstName: 'Admin',
+                    lastName: 'User',
+                    fatherName: '',
+                    personnelCode: '2',
+                    nationalCode: '',
+                    role: 'ADMIN',
+                    username: '2',
+                    password: '2',
+                    status: 'active'
+                },
+                {
+                    firstName: 'Evaluator',
+                    lastName: 'User',
+                    fatherName: '',
+                    personnelCode: '3',
+                    nationalCode: '',
+                    role: 'EVALUATOR',
+                    username: '3',
+                    password: '3',
+                    status: 'active'
+                }
+            ];
+            for (let user of users) {
+                const existing = await getFromStore('users', user.personnelCode);
+                if (!existing) {
+                    await addToStore('users', user);
+                }
+            }
+            checkLogin();
+        }
+
+        function addToStore(storeName, item) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, 'readwrite');
+                const req = tx.objectStore(storeName).add(item);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = reject;
+            });
+        }
+
+        function putToStore(storeName, item) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, 'readwrite');
+                const req = tx.objectStore(storeName).put(item);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = reject;
+            });
+        }
+
+        function getFromStore(storeName, key) {
+            return new Promise((resolve) => {
+                const tx = db.transaction(storeName);
+                const req = tx.objectStore(storeName).get(key);
+                req.onsuccess = () => resolve(req.result);
+            });
+        }
+
+        function getAllFromStore(storeName) {
+            return new Promise((resolve) => {
+                const tx = db.transaction(storeName);
+                const req = tx.objectStore(storeName).getAll();
+                req.onsuccess = () => resolve(req.result);
+            });
+        }
+
+        function deleteFromStore(storeName, key) {
+            const tx = db.transaction(storeName, 'readwrite');
+            tx.objectStore(storeName).delete(key);
+        }
+
+        function checkLogin() {
+            const userJson = localStorage.getItem('currentUser');
+            if (userJson) {
+                currentUser = JSON.parse(userJson);
+                showApp();
+            } else {
+                document.getElementById('login').style.display = 'block';
+                document.getElementById('app').style.display = 'none';
+            }
+        }
+
+        function showApp() {
+            document.getElementById('login').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            updateMenu();
+            showSection('dashboard-section');
+            loadUsers();
+            loadCriteria();
+            loadEvaluations();
+            initEventListeners();
+            loadDashboardStats();
+        }
+
+        function updateMenu() {
+            const role = currentUser.role;
+            document.getElementById('users').style.display = role === 'SUPER_ADMIN' ? 'block' : 'none';
+            document.getElementById('formBuilder').style.display = role === 'SUPER_ADMIN' ? 'block' : 'none';
+            document.getElementById('analytics').style.display = role !== 'EVALUATOR' ? 'block' : 'none';
+        }
+
+        function initEventListeners() {
+            document.getElementById('hamburger').addEventListener('click', () => {
+                const menu = document.getElementById('menu');
+                menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+            });
+            document.querySelectorAll('#menu li').forEach(li => {
+                li.addEventListener('click', () => {
+                    showSection(li.id + '-section');
+                    document.getElementById('menu').style.display = 'none';
+                    if (li.id === 'evaluation') loadEvaluationForm();
+                    if (li.id === 'analytics') {
+                        loadAnalytics();
+                        loadSelectForAnalysis();
+                    }
+                    if (li.id === 'ranking') {
+                        loadRankingFilters();
+                        applyRankingFilters();
+                    }
+                    if (li.id === 'pdf') loadPdfTable();
+                    if (li.id === 'reports') {
+                        loadReports();
+                        loadReportFilters();
+                        document.getElementById('reportSort').addEventListener('change', applyReportFilterAndSort);
+                    }
+                    if (li.id === 'logout') logout();
+                });
+            });
+            document.getElementById('evaluationForm').addEventListener('input', autoSaveEvaluation);
+            document.getElementById('evaluationForm').addEventListener('change', autoSaveEvaluation);
+            document.getElementById('visitDate').addEventListener('change', updateShamsiDate);
+            document.getElementById('searchInputUsers').addEventListener('input', () => searchTable('usersTable', 'searchInputUsers'));
+            document.getElementById('searchInputCriteria').addEventListener('input', () => searchTable('criteriaTable', 'searchInputCriteria'));
+            document.getElementById('searchInputEvaluations').addEventListener('input', () => searchTable('evaluationsTable', 'searchInputEvaluations'));
+            document.getElementById('searchInputReports').addEventListener('input', () => searchTable('reportsTable', 'searchInputReports'));
+            document.getElementById('searchInputPdf').addEventListener('input', () => searchTable('pdfTable', 'searchInputPdf'));
+            document.getElementById('userForm').addEventListener('submit', (e) => { e.preventDefault(); saveUser(); });
+            // حذف اعلان ذخیره نشده
+            // setInterval(checkUnsavedChanges, 30000); حذف شد
+        }
+
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
+        }
+
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            if (!username || !password) {
+                Swal.fire({ title: 'خطا', text: 'لطفاً نام کاربری و رمز عبور را وارد کنید', icon: 'error' });
+                return;
+            }
+            getAllFromStore('users').then(users => {
+                const user = users.find(u => u.username === username && u.password === password && u.status === 'active');
+                if (user) {
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    addToStore('logs', { userId: user.personnelCode, action: 'login', timestamp: new Date().toISOString() });
+                    currentUser = user;
+                    showApp();
+                } else {
+                    Swal.fire({ title: 'خطا', text: 'نام کاربری یا رمز عبور اشتباه است', icon: 'error' });
+                }
+            });
+        }
+
+        function logout() {
+            addToStore('logs', { userId: currentUser.personnelCode, action: 'logout', timestamp: new Date().toISOString() });
+            localStorage.removeItem('currentUser');
+            currentUser = null;
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('login').style.display = 'block';
+            location.reload();
+        }
+
+        // User Management
+        let currentUserEditCode = null;
+        function saveUser() {
+            const personnelCode = document.getElementById('personnelCode').value;
+            const isEdit = !!currentUserEditCode;
+            getFromStore('users', personnelCode).then(existingUser => {
+                if (existingUser && !isEdit) {
+                    Swal.fire({ title: 'خطا', text: 'کد پرسنلی تکراری است', icon: 'error' });
+                    return;
+                }
+                const user = {
+                    firstName: document.getElementById('firstName').value,
+                    lastName: document.getElementById('lastName').value,
+                    fatherName: document.getElementById('fatherName').value,
+                    personnelCode: personnelCode,
+                    nationalCode: document.getElementById('nationalCode').value,
+                    role: document.getElementById('role').value,
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                    status: document.getElementById('status').value
+                };
+                putToStore('users', user).then(() => {
+                    loadUsers();
+                    Swal.fire({ title: 'موفق', text: isEdit ? 'کاربر ویرایش شد' : 'کاربر ذخیره شد', icon: 'success' });
+                    currentUserEditCode = null;
+                });
+                document.getElementById('userForm').reset();
+            });
+        }
+
+        function loadUsers() {
+            getAllFromStore('users').then(users => {
+                const tbody = document.getElementById('usersTable').querySelector('tbody');
+                tbody.innerHTML = '';
+                users.forEach(u => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${u.firstName} ${u.lastName}</td><td>${u.personnelCode}</td><td>${u.role}</td><td>${u.status === 'active' ? 'فعال' : 'غیرفعال'}</td><td><button onclick="editUser('${u.personnelCode}')">ویرایش</button><button onclick="deleteUser('${u.personnelCode}')">حذف</button></td>`;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        function editUser(code) {
+            currentUserEditCode = code;
+            getFromStore('users', code).then(user => {
+                document.getElementById('firstName').value = user.firstName;
+                document.getElementById('lastName').value = user.lastName;
+                document.getElementById('fatherName').value = user.fatherName;
+                document.getElementById('personnelCode').value = user.personnelCode;
+                document.getElementById('personnelCode').disabled = true;
+                document.getElementById('nationalCode').value = user.nationalCode;
+                document.getElementById('role').value = user.role;
+                document.getElementById('username').value = user.username;
+                document.getElementById('password').value = user.password;
+                document.getElementById('status').value = user.status;
+            });
+        }
+
+        function deleteUser(code) {
+            deleteFromStore('users', code);
+            loadUsers();
+        }
+
+        function exportUsersToExcel() {
+            getAllFromStore('users').then(users => {
+                const data = users.map(u => ({
+                    'نام': u.firstName,
+                    'نام خانوادگی': u.lastName,
+                    'نام پدر': u.fatherName,
+                    'کد پرسنلی': u.personnelCode,
+                    'کد ملی': u.nationalCode,
+                    'نقش': u.role,
+                    'نام کاربری': u.username,
+                    'وضعیت': u.status
+                }));
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'کاربران');
+                XLSX.writeFile(wb, 'users.xlsx');
+            });
+        }
+
+        function exportUsersToJson() {
+            getAllFromStore('users').then(users => {
+                const blob = new Blob([JSON.stringify(users, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'users.json';
+                a.click();
+            });
+        }
+
+        function importUsersFromJson() {
+            const file = document.getElementById('importUsersJson').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const users = JSON.parse(e.target.result);
+                    users.forEach(user => putToStore('users', user));
+                    loadUsers();
+                    Swal.fire({ title: 'موفق', text: 'کاربران وارد شدند', icon: 'success' });
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // Form Builder
+        let currentCriterionId = null;
+        function saveCriterion() {
+            const criterion = {
+                title: document.getElementById('title').value,
+                axis: document.getElementById('axis').value,
+                weight: parseFloat(document.getElementById('weight').value),
+                enabled: document.getElementById('enabled').value === 'true'
+            };
+            if (currentCriterionId) {
+                criterion.id = currentCriterionId;
+                putToStore('criteria', criterion).then(() => loadCriteria());
+                currentCriterionId = null;
+            } else {
+                addToStore('criteria', criterion).then(id => {
+                    criteriaOrder.push(id);
+                    saveCriteriaOrder();
+                    loadCriteria();
+                });
+            }
+            document.getElementById('criterionForm').reset();
+        }
+
+        function loadCriteria() {
+            getAllFromStore('criteria').then(criteria => {
+                const tbody = document.getElementById('sortableCriteria');
+                tbody.innerHTML = '';
+                const sortedCriteria = criteria.sort((a, b) => criteriaOrder.indexOf(a.id) - criteriaOrder.indexOf(b.id));
+                sortedCriteria.forEach(c => {
+                    const tr = document.createElement('tr');
+                    tr.dataset.id = c.id;
+                    tr.className = c.enabled ? 'sortable' : 'disabled sortable';
+                    tr.innerHTML = `<td>${c.title}</td><td>${c.axis}</td><td>${c.weight}</td><td>${c.enabled ? 'فعال' : 'غیرفعال'}</td><td><button onclick="editCriterion(${c.id})">ویرایش</button><button onclick="deleteCriterion(${c.id})">حذف</button></td>`;
+                    tbody.appendChild(tr);
+                });
+                Sortable.create(tbody, {
+                    animation: 150,
+                    onEnd: () => {
+                        criteriaOrder = Array.from(tbody.querySelectorAll('tr')).map(tr => parseInt(tr.dataset.id));
+                    }
+                });
+            });
+        }
+
+        function editCriterion(id) {
+            getFromStore('criteria', id).then(c => {
+                document.getElementById('title').value = c.title;
+                document.getElementById('axis').value = c.axis;
+                document.getElementById('weight').value = c.weight;
+                document.getElementById('enabled').value = c.enabled ? 'true' : 'false';
+                currentCriterionId = id;
+            });
+        }
+
+        function deleteCriterion(id) {
+            deleteFromStore('criteria', id);
+            criteriaOrder = criteriaOrder.filter(cid => cid !== id);
+            saveCriteriaOrder();
+            loadCriteria();
+        }
+
+        function saveCriteriaOrder() {
+            putToStore('criteriaOrder', {id: 1, order: criteriaOrder});
+        }
+
+        function loadCriteriaOrder() {
+            getFromStore('criteriaOrder', 1).then(orderObj => {
+                criteriaOrder = orderObj ? orderObj.order : [];
+            });
+        }
+
+        function exportCriteriaToJson() {
+            getAllFromStore('criteria').then(criteria => {
+                const blob = new Blob([JSON.stringify(criteria, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'criteria.json';
+                a.click();
+            });
+        }
+
+        function importCriteriaFromJson() {
+            const file = document.getElementById('importCriteriaJson').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const criteria = JSON.parse(e.target.result);
+                    criteria.forEach(crit => putToStore('criteria', crit));
+                    loadCriteria();
+                    Swal.fire({ title: 'موفق', text: 'معیارها وارد شدند', icon: 'success' });
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // Evaluation
+        function loadEvaluationForm(evalId = null) {
+            editMode = !!evalId;
+            companionSigPads = [];
+            companionCount = 0;
+            document.getElementById('companions').innerHTML = '';
+            document.getElementById('location').textContent = currentEvaluation.location || '';
+            document.getElementById('audioPlayer').src = currentEvaluation.audio || '';
+            document.getElementById('photoPreview').src = currentEvaluation.photo || '';
+            if (editMode) {
+                getFromStore('evaluations', evalId).then(evalData => {
+                    if (evalData) {
+                        currentEvaluation = evalData;
+                        populateEvaluationForm();
+                        updateFinalScore();
+                        if (currentEvaluation.companions) {
+                            currentEvaluation.companions.forEach((comp, index) => addCompanion(comp.name, comp.code, comp.signature));
+                        }
+                        if (currentEvaluation.location) {
+                            const [lat, lng] = currentEvaluation.location.split(' ')[1].split(',');
+                            initMap(lat, lng);
+                        }
+                    } else {
+                        Swal.fire({ title: 'خطا', text: 'ارزیابی یافت نشد', icon: 'error' });
+                    }
+                });
+            } else {
+                currentEvaluation = { companions: [], enabledCriteria: [], scores: {}, notes: {}, location: '', audio: '', photo: '' };
+                populateEvaluationForm();
+                updateFinalScore();
+            }
+            initSignatures();
+            updateShamsiDate();
+            loadAxisSelect();
+        }
+
+        function loadAxisSelect() {
+            getAllFromStore('criteria').then(criteria => {
+                axisCriteria = {};
+                criteria.forEach(c => {
+                    if (!axisCriteria[c.axis]) axisCriteria[c.axis] = [];
+                    axisCriteria[c.axis].push(c);
+                });
+                const select = document.getElementById('axisSelect');
+                select.innerHTML = '<option value="">انتخاب محور</option>';
+                Object.keys(axisCriteria).forEach(axis => {
+                    const option = document.createElement('option');
+                    option.value = axis;
+                    option.textContent = axis;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        function loadCriteriaForAxis(axis) {
+            const criteria = axisCriteria[axis] || [];
+            const tbody = document.getElementById('criteriaBody');
+            tbody.innerHTML = '';
+            criteria.forEach(c => {
+                const enabled = currentEvaluation.enabledCriteria?.includes(c.id) ?? c.enabled;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="checkbox" class="criterion-toggle" data-id="${c.id}" ${enabled ? 'checked' : ''}></td>
+                    <td><strong>${c.title}</strong><br><small style="color:#64748b;">(${c.axis})</small></td>
+                    <td><select id="score-${c.id}" ${!enabled ? 'disabled' : ''}>
+                        <option value="4" ${currentEvaluation.scores?.[c.id] === 4 ? 'selected' : ''}>۴</option>
+                        <option value="3" ${currentEvaluation.scores?.[c.id] === 3 ? 'selected' : ''}>۳</option>
+                        <option value="2" ${currentEvaluation.scores?.[c.id] === 2 ? 'selected' : ''}>۲</option>
+                        <option value="1" ${currentEvaluation.scores?.[c.id] === 1 ? 'selected' : ''}>۱</option>
+                    </select></td>
+                    <td><textarea id="notes-${c.id}" placeholder="یادداشت اختیاری">${currentEvaluation.notes?.[c.id] || ''}</textarea></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.querySelectorAll('.criterion-toggle').forEach(toggle => toggle.addEventListener('change', toggleCriterion));
+            document.querySelectorAll('#criteriaBody select, #criteriaBody textarea').forEach(el => el.addEventListener('change', updateFinalScore));
+        }
+
+        function populateEvaluationForm() {
+            document.getElementById('managementType').value = currentEvaluation.managementType || '';
+            document.getElementById('schoolName').value = currentEvaluation.schoolName || '';
+            document.getElementById('gender').value = currentEvaluation.gender || '';
+            document.getElementById('schoolCode').value = currentEvaluation.schoolCode || '';
+            document.getElementById('areaType').value = currentEvaluation.areaType || '';
+            document.getElementById('managerName').value = currentEvaluation.managerName || '';
+            document.getElementById('personnelCode').value = currentEvaluation.personnelCode || '';
+            document.getElementById('phone').value = currentEvaluation.phone || '';
+            document.getElementById('educationDegree').value = currentEvaluation.educationDegree || '';
+            document.getElementById('serviceYears').value = currentEvaluation.serviceYears || 0;
+            document.getElementById('managementYears').value = currentEvaluation.managementYears || 0;
+            document.getElementById('studentCount').value = currentEvaluation.studentCount || 0;
+            document.getElementById('staffCount').value = currentEvaluation.staffCount || 0;
+            document.getElementById('visitDate').value = currentEvaluation.visitDate || '';
+            const courseType = currentEvaluation.courseType || '';
+            document.querySelectorAll('#evaluationForm input[type="radio"][name="courseType"]').forEach(rb => rb.checked = rb.value === courseType);
+        }
+
+        function toggleCriterion(e) {
+            const id = parseInt(e.target.dataset.id);
+            const enabled = e.target.checked;
+            const select = document.getElementById(`score-${id}`);
+            select.disabled = !enabled;
+            if (!currentEvaluation.enabledCriteria) currentEvaluation.enabledCriteria = [];
+            if (enabled && !currentEvaluation.enabledCriteria.includes(id)) currentEvaluation.enabledCriteria.push(id);
+            if (!enabled) currentEvaluation.enabledCriteria = currentEvaluation.enabledCriteria.filter(cid => cid !== id);
+            updateFinalScore();
+            autoSaveEvaluation();
+        }
+
+        function updateFinalScore() {
+            getAllFromStore('criteria').then(criteria => {
+                const finalScore = calculateFinalScore(currentEvaluation, criteria);
+                document.getElementById('finalScoreDisplay').textContent = `نمره نهایی: ${finalScore.toFixed(2)}`;
+                const color = finalScore < 50 ? 'red' : finalScore <= 75 ? '#eab308' : '#22c55e';
+                document.getElementById('finalScoreDisplay').style.color = color;
+            });
+        }
+
+        function calculateFinalScore(evalData, criteria) {
+            if (!evalData.enabledCriteria || evalData.enabledCriteria.length === 0) return 0;
+            let sumPercent = 0, totalWeight = 0;
+            criteria.filter(c => evalData.enabledCriteria.includes(c.id)).forEach(c => {
+                const score = evalData.scores[c.id] || 1;
+                const percent = (score / 4) * 100;
+                sumPercent += percent * c.weight;
+                totalWeight += c.weight;
+            });
+            return totalWeight > 0 ? (sumPercent / totalWeight) : 0;
+        }
+
+        function initSignatures() {
+            const inspectorCanvas = document.getElementById('inspectorSignature');
+            const managerCanvas = document.getElementById('managerSignature');
+            inspectorSigPad = new SignaturePad(inspectorCanvas, { penColor: '#1e293b' });
+            managerSigPad = new SignaturePad(managerCanvas, { penColor: '#1e293b' });
+        }
+
+        function addCompanion(name = '', code = '', signature = '') {
+            const index = companionCount++;
+            const div = document.createElement('div');
+            div.className = 'companion';
+            div.innerHTML = `
+                <input id="comp-name-${index}" placeholder="نام همراه" value="${name}">
+                <input id="comp-code-${index}" placeholder="کد پرسنلی همراه" value="${code}">
+                <div><canvas id="comp-sig-${index}" class="signature"></canvas></div>
+                <button onclick="removeCompanion(${index})">حذف</button>
+            `;
+            document.getElementById('companions').appendChild(div);
+            const canvas = document.getElementById(`comp-sig-${index}`);
+            const sigPad = new SignaturePad(canvas, { penColor: '#1e293b' });
+            companionSigPads[index] = sigPad;
+            if (signature) sigPad.fromDataURL(signature);
+        }
+
+        function removeCompanion(index) {
+            document.getElementById(`comp-name-${index}`).parentElement.remove();
+            companionSigPads.splice(index, 1);
+            companionCount--;
+        }
+
+        function clearSignatures() {
+            inspectorSigPad.clear();
+            managerSigPad.clear();
+            companionSigPads.forEach(pad => pad.clear());
+        }
+
+        function autoSaveEvaluation() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(saveEvaluation, 1200);
+        }
+
+        function manualSaveEvaluation() {
+            if (isFormComplete()) {
+                saveEvaluation(true);
+            } else {
+                Swal.fire({ title: 'خطا', text: 'لطفاً همه فیلدهای الزامی را پر کنید', icon: 'error' });
+            }
+        }
+
+        function isFormComplete() {
+            const requiredFields = document.querySelectorAll('#evaluationForm input[required], #evaluationForm select[required]');
+            for (let field of requiredFields) {
+                if (!field.value.trim()) return false;
+            }
+            for (let id of currentEvaluation.enabledCriteria || []) {
+                const score = document.getElementById(`score-${id}`);
+                if (!score.value) return false;
+            }
+            return true;
+        }
+
+        function saveEvaluation(showToast = false) {
+            currentEvaluation.managementType = document.getElementById('managementType').value;
+            currentEvaluation.schoolName = document.getElementById('schoolName').value;
+            currentEvaluation.gender = document.getElementById('gender').value;
+            currentEvaluation.schoolCode = document.getElementById('schoolCode').value;
+            currentEvaluation.areaType = document.getElementById('areaType').value;
+            currentEvaluation.managerName = document.getElementById('managerName').value;
+            currentEvaluation.personnelCode = document.getElementById('personnelCode').value;
+            currentEvaluation.phone = document.getElementById('phone').value;
+            currentEvaluation.educationDegree = document.getElementById('educationDegree').value;
+            currentEvaluation.serviceYears = parseInt(document.getElementById('serviceYears').value) || 0;
+            currentEvaluation.managementYears = parseInt(document.getElementById('managementYears').value) || 0;
+            currentEvaluation.studentCount = parseInt(document.getElementById('studentCount').value) || 0;
+            currentEvaluation.staffCount = parseInt(document.getElementById('staffCount').value) || 0;
+            currentEvaluation.visitDate = document.getElementById('visitDate').value;
+            currentEvaluation.courseType = document.querySelector('#evaluationForm input[type="radio"][name="courseType"]:checked') ? document.querySelector('#evaluationForm input[type="radio"][name="courseType"]:checked').value : '';
+
+            getAllFromStore('criteria').then(criteria => {
+                currentEvaluation.scores = {};
+                currentEvaluation.notes = {};
+                criteria.forEach(c => {
+                    if (currentEvaluation.enabledCriteria?.includes(c.id)) {
+                        const scoreEl = document.getElementById(`score-${c.id}`);
+                        currentEvaluation.scores[c.id] = scoreEl ? parseInt(scoreEl.value) : 1;
+                        const noteEl = document.getElementById(`notes-${c.id}`);
+                        currentEvaluation.notes[c.id] = noteEl ? noteEl.value : '';
+                    }
+                });
+                currentEvaluation.inspectorSignature = inspectorSigPad.toDataURL();
+                currentEvaluation.managerSignature = managerSigPad.toDataURL();
+                currentEvaluation.companions = [];
+                for (let i = 0; i < companionCount; i++) {
+                    const nameEl = document.getElementById(`comp-name-${i}`);
+                    const codeEl = document.getElementById(`comp-code-${i}`);
+                    if (nameEl && codeEl) {
+                        currentEvaluation.companions.push({
+                            name: nameEl.value,
+                            code: codeEl.value,
+                            signature: companionSigPads[i]?.toDataURL() || ''
+                        });
+                    }
+                }
+                currentEvaluation.savedAt = new Date().toISOString();
+                currentEvaluation.finalScore = calculateFinalScore(currentEvaluation, criteria);
+                currentEvaluation.location = document.getElementById('location').textContent;
+                currentEvaluation.audio = document.getElementById('audioPlayer').src;
+                currentEvaluation.photo = document.getElementById('photoPreview').src;
+
+                const promise = currentEvaluation.id ? putToStore('evaluations', currentEvaluation) : addToStore('evaluations', currentEvaluation);
+                promise.then(id => {
+                    if (!currentEvaluation.id) currentEvaluation.id = id;
+                    if (showToast) {
+                        Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, title: 'با موفقیت ذخیره شد', icon: 'success' });
+                    }
+                    loadEvaluations();
+                    updateFinalScore();
+                });
+            });
+        }
+
+        function updateShamsiDate() {
+            const gregDate = document.getElementById('visitDate').value;
+            if (gregDate) {
+                const date = new Date(gregDate);
+                document.getElementById('shamsiDate').textContent = gregorianToJalali(date);
+            } else {
+                document.getElementById('shamsiDate').textContent = '';
+            }
+        }
+
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    document.getElementById('location').textContent = `لوکیشن: ${position.coords.latitude}, ${position.coords.longitude}`;
+                    Swal.fire({ title: 'موفق', text: 'لوکیشن ثبت شد', icon: 'success' });
+                    initMap(position.coords.latitude, position.coords.longitude);
+                }, error => {
+                    Swal.fire({ title: 'خطا', text: 'دریافت لوکیشن شکست خورد', icon: 'error' });
+                });
+            } else {
+                Swal.fire({ title: 'خطا', text: 'مرورگر از لوکیشن پشتیبانی نمی‌کند', icon: 'error' });
+            }
+        }
+
+        function initMap(lat, lng) {
+            if (map) map.remove();
+            map = L.map('map').setView([lat, lng], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            L.marker([lat, lng]).addTo(map);
+        }
+
+        function startRecording() {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                recorder = new MediaRecorder(stream);
+                audioChunks = [];
+                recorder.ondataavailable = e => audioChunks.push(e.data);
+                recorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    document.getElementById('audioPlayer').src = URL.createObjectURL(audioBlob);
+                };
+                recorder.start();
+                recordingTimer = setTimeout(stopRecording, 180000);
+            });
+        }
+
+        function stopRecording() {
+            recorder.stop();
+            clearTimeout(recordingTimer);
+        }
+
+        function previewPhoto() {
+            const file = document.getElementById('photoUpload').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => document.getElementById('photoPreview').src = e.target.result;
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function loadEvaluations() {
+            getAllFromStore('evaluations').then(evals => {
+                allEvals = evals;
+                const tbody = document.getElementById('evaluationsTable').querySelector('tbody');
+                tbody.innerHTML = '';
+                evals.forEach(e => {
+                    const tr = document.createElement('tr');
+                    const shamsiDate = gregorianToJalali(new Date(e.savedAt));
+                    const color = getHealthIndexColor(e.finalScore);
+                    tr.innerHTML = `<td>${e.managerName}</td><td>${e.personnelCode}</td><td>${e.schoolName}</td><td>${e.managementType}</td><td>${e.courseType}</td><td style="color: ${color};">${e.finalScore.toFixed(2)}</td><td>${shamsiDate}</td><td><button onclick="viewEvaluation(${e.id})">مشاهده</button><button onclick="editEvaluation(${e.id})">ویرایش</button><button onclick="exportPdf(${e.id})">PDF</button><button onclick="deleteEvaluation(${e.id})">حذف</button></td>`;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        function deleteEvaluation(id) {
+            Swal.fire({
+                title: 'حذف ارزیابی',
+                text: "آیا مطمئن هستید که می‌خواهید این ارزیابی را حذف کنید؟",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'بله, حذف کن!',
+                cancelButtonText: 'لغو'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    deleteFromStore('evaluations', id);
+                    loadEvaluations();
+                    Swal.fire('حذف شد!', 'ارزیابی با موفقیت حذف شد.', 'success');
+                }
+            });
+        }
+
+        function getHealthIndexColor(score) {
+            if (score < 50) return 'red';
+            if (score <= 75) return 'yellow';
+            return 'green';
+        }
+
+        function viewEvaluation(id) {
+            loadEvaluationForm(id);
+            document.querySelectorAll('#evaluationForm input, select, textarea, button:not([onclick="clearSignatures()"])').forEach(el => el.disabled = true);
+            inspectorSigPad.off();
+            managerSigPad.off();
+            companionSigPads.forEach(pad => pad.off());
+        }
+
+        function editEvaluation(id) {
+            loadEvaluationForm(id);
+        }
+
+        function exportPdf(id) {
+            getFromStore('evaluations', id).then(evalData => {
+                if (!evalData) {
+                    Swal.fire({ title: 'خطا', text: 'داده ارزیابی یافت نشد', icon: 'error' });
+                    return;
+                }
+                getAllFromStore('criteria').then(criteria => {
+                    const pdfContent = createCompactPdfContent(evalData, criteria);
+                    const opt = {
+                        margin: 0.1,
+                        filename: `${evalData.schoolName}.pdf`,
+                        image: { type: 'jpeg', quality: 0.95 },
+                        html2canvas: { scale: 1.2 },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                        pagebreak: { mode: ['avoid-all'] }
+                    };
+                    html2pdf().from(pdfContent).set(opt).save();
+                });
+            });
+        }
+
+        function createCompactPdfContent(evalData, criteria) {
+            const div = document.createElement('div');
+            div.style.fontSize = '5pt'; // کوچکتر کردن فونت برای مصرف کمتر کاغذ
+            div.style.lineHeight = '1.0';
+            div.style.padding = '3mm';
+            let criteriaHtml = '';
+            criteria.filter(c => evalData.enabledCriteria.includes(c.id)).forEach(c => {
+                criteriaHtml += `<tr><td>${c.title} (${c.axis})</td><td>${evalData.scores[c.id]}</td><td>${evalData.notes[c.id] || 'ندارد'}</td></tr>`;
+            });
+            let companionsHtml = '';
+            evalData.companions.forEach((comp, i) => {
+                companionsHtml += `<tr><td>همراه ${i+1}: ${comp.name} (${comp.code})</td><td><img src="${comp.signature}" style="width: 50mm; height: 20mm;"></td></tr>`;
+            });
+            div.innerHTML = `
+                <h1 style="font-size: 8pt; text-align: center; margin-bottom: 3mm;">گزارش ارزیابی ${evalData.managerName} - ${evalData.schoolName}</h1>
+                <table style="width: 100%; border-collapse: collapse; font-size: 5pt; border: 1px solid black;">
+                    <tr><th colspan="3">اطلاعات پایه</th></tr>
+                    <tr><td>نوع مدیریت: ${evalData.managementType}</td><td>نام مدرسه: ${evalData.schoolName}</td><td>جنسیت: ${evalData.gender}</td></tr>
+                    <tr><td>کد مدرسه: ${evalData.schoolCode}</td><td>نوع منطقه: ${evalData.areaType}</td><td>کد پرسنلی: ${evalData.personnelCode}</td></tr>
+                    <tr><td>تلفن: ${evalData.phone}</td><td>مدرک تحصیلی: ${evalData.educationDegree}</td><td>سنوات خدمت: ${evalData.serviceYears}</td></tr>
+                    <tr><td>سنوات مدیریت: ${evalData.managementYears}</td><td>تعداد دانش آموزان: ${evalData.studentCount}</td><td>تعداد پرسنل: ${evalData.staffCount}</td></tr>
+                    <tr><td>نوع دوره: ${evalData.courseType}</td><td>تاریخ بازدید: ${gregorianToJalali(new Date(evalData.visitDate))}</td><td>نمره نهایی: ${evalData.finalScore.toFixed(2)}</td></tr>
+                    <tr><th colspan="3">معیارها</th></tr>
+                    ${criteriaHtml}
+                    <tr><th colspan="3">لوکیشن: ${evalData.location || 'ندارد'}</th></tr>
+                    <tr><td colspan="3"><img src="${evalData.photo || ''}" style="max-width: 50mm; max-height: 30mm;"></td></tr>
+                    <tr><th colspan="3">امضاها</th></tr>
+                    <tr><td>بازرس: <img src="${evalData.inspectorSignature}" style="width: 50mm; height: 20mm;"></td><td colspan="2">مدیر: <img src="${evalData.managerSignature}" style="width: 50mm; height: 20mm;"></td></tr>
+                    ${companionsHtml}
+                </table>
+            `;
+            return div;
+        }
+
+        function exportEvaluationsToExcel() {
+            getAllFromStore('evaluations').then(evals => {
+                getAllFromStore('criteria').then(criteria => {
+                    const data = evals.map(e => {
+                        const row = {
+                            'نام مدیر': e.managerName,
+                            'کد پرسنلی': e.personnelCode,
+                            'نام مدرسه': e.schoolName,
+                            'نوع مدیریت': e.managementType,
+                            'جنسیت': e.gender,
+                            'کد مدرسه': e.schoolCode,
+                            'نوع منطقه': e.areaType,
+                            'تلفن': e.phone,
+                            'مدرک تحصیلی': e.educationDegree,
+                            'سنوات خدمت': e.serviceYears,
+                            'سنوات مدیریت': e.managementYears,
+                            'تعداد دانش آموزان': e.studentCount,
+                            'تعداد پرسنل': e.staffCount,
+                            'نوع دوره': e.courseType,
+                            'تاریخ بازدید': e.visitDate,
+                            'نمره نهایی': e.finalScore.toFixed(2),
+                            'ذخیره‌شده در': gregorianToJalali(new Date(e.savedAt)),
+                            'لوکیشن': e.location,
+                            'عکس': e.photo ? 'بله' : 'خیر',
+                            'صدا': e.audio ? 'بله' : 'خیر'
+                        };
+                        criteria.forEach(c => {
+                            if (e.scores[c.id]) {
+                                row[`نمره ${c.title}`] = e.scores[c.id];
+                                row[`یادداشت ${c.title}`] = e.notes[c.id] || '';
+                            }
+                        });
+                        e.companions.forEach((comp, i) => {
+                            row[`همراه ${i+1} نام`] = comp.name;
+                            row[`همراه ${i+1} کد`] = comp.code;
+                            row[`همراه ${i+1} امضا`] = 'بله';
+                        });
+                        row['امضای بازرس'] = 'بله';
+                        row['امضای مدیر'] = 'بله';
+                        return row;
+                    });
+                    const ws = XLSX.utils.json_to_sheet(data);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'ارزیابی‌ها');
+                    XLSX.writeFile(wb, 'evaluations.xlsx');
+                });
+            });
+        }
+
+        function exportEvaluationsToJson() {
+            getAllFromStore('evaluations').then(evals => {
+                const blob = new Blob([JSON.stringify(evals, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'evaluations.json';
+                a.click();
+            });
+        }
+
+        function importEvaluationsFromJson() {
+            const file = document.getElementById('importEvaluationsJson').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const evals = JSON.parse(e.target.result);
+                    evals.forEach(evalItem => putToStore('evaluations', evalItem));
+                    loadEvaluations();
+                    Swal.fire({ title: 'موفق', text: 'ارزیابی‌ها وارد شدند', icon: 'success' });
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // Charts and Analytics
+        function loadAnalytics() {
+            getAllFromStore('evaluations').then(evals => {
+                if (evals.length === 0) {
+                    document.getElementById('smartAnalysis').innerHTML = '<p>داده‌ای برای تحلیل موجود نیست.</p>';
+                    return;
+                }
+                getAllFromStore('criteria').then(criteria => {
+                    const axes = [...new Set(criteria.map(c => c.axis))];
+                    const avgPerAxis = axes.map(axis => {
+                        let sum = 0, count = 0;
+                        evals.forEach(e => {
+                            criteria.filter(c => c.axis === axis && e.enabledCriteria?.includes(c.id)).forEach(c => {
+                                sum += e.scores[c.id] || 0;
+                                count++;
+                            });
+                        });
+                        return count > 0 ? sum / count : 0;
+                    });
+                    new Chart(document.getElementById('barChart'), {
+                        type: 'bar',
+                        data: { labels: axes, datasets: [{ label: 'میانگین نمره محور', data: avgPerAxis, backgroundColor: '#1565c0' }] },
+                        options: { scales: { y: { beginAtZero: true } } }
+                    });
+
+                    if (evals.length > 0) {
+                        const avgRadarData = axes.map(axis => {
+                            let sum = 0, count = 0;
+                            evals.forEach(e => {
+                                criteria.filter(c => c.axis === axis && e.enabledCriteria?.includes(c.id)).forEach(c => {
+                                    sum += (e.scores[c.id] || 0) / 4 * 100;
+                                    count++;
+                                });
+                            });
+                            return count > 0 ? sum / count : 0;
+                        });
+                        new Chart(document.getElementById('radarChart'), {
+                            type: 'radar',
+                            data: { labels: axes, datasets: [{ label: 'میانگین درصد نمره محورها', data: avgRadarData, fill: true, backgroundColor: 'rgba(21,101,192,0.2)', borderColor: '#1565c0' }] }
+                        });
+                    }
+
+                    const sortedEvals = evals.sort((a,b) => new Date(a.savedAt) - new Date(b.savedAt));
+                    const dates = sortedEvals.map(e => gregorianToJalali(new Date(e.savedAt)));
+                    const scores = sortedEvals.map(e => e.finalScore);
+                    new Chart(document.getElementById('trendChart'), {
+                        type: 'line',
+                        data: { labels: dates, datasets: [{ label: 'نمره نهایی', data: scores, borderColor: '#1565c0' }] }
+                    });
+
+                    const managementTypes = [...new Set(evals.map(e => e.managementType))];
+                    const datasets = managementTypes.map(type => {
+                        const typeEvals = evals.filter(e => e.managementType === type).sort((a,b) => new Date(a.savedAt) - new Date(b.savedAt));
+                        const typeDates = typeEvals.map(e => gregorianToJalali(new Date(e.savedAt)));
+                        const typeScores = typeEvals.map(e => e.finalScore);
+                        return {
+                            label: type,
+                            data: typeScores,
+                            borderColor: '#' + Math.floor(Math.random()*16777215).toString(16)
+                        };
+                    });
+                    new Chart(document.getElementById('comparisonChart'), {
+                        type: 'line',
+                        data: { labels: dates, datasets: datasets },
+                        options: { scales: { y: { beginAtZero: true } } }
+                    });
+
+                    const analysis = generateSmartAnalysis(evals, criteria);
+                    const table = document.createElement('table');
+                    table.innerHTML = '<thead><tr><th>خلاصه</th><th>راهبردی</th><th>روانشناسی</th><th>راه حل</th></tr></thead><tbody><tr><td>' + analysis.summary + '</td><td>' + analysis.strategic + '</td><td>' + analysis.psychology + '</td><td>' + analysis.solution + '</td></tr></tbody>';
+                    document.getElementById('smartAnalysis').innerHTML = '';
+                    document.getElementById('smartAnalysis').appendChild(table);
+                });
+            });
+        }
+
+        function loadSingleAnalytics(evalId) {
+            if (!evalId) return loadAnalytics();
+            getFromStore('evaluations', parseInt(evalId)).then(singleEval => {
+                getAllFromStore('criteria').then(criteria => {
+                    const axes = [...new Set(criteria.map(c => c.axis))];
+                    const avgPerAxis = axes.map(axis => {
+                        let sum = 0, count = 0;
+                        criteria.filter(c => c.axis === axis && singleEval.enabledCriteria?.includes(c.id)).forEach(c => {
+                            sum += singleEval.scores[c.id] || 0;
+                            count++;
+                        });
+                        return count > 0 ? sum / count : 0;
+                    });
+                    if (document.getElementById('barChart').getContext('2d').chart) document.getElementById('barChart').getContext('2d').chart.destroy();
+                    new Chart(document.getElementById('barChart'), {
+                        type: 'bar',
+                        data: { labels: axes, datasets: [{ label: 'میانگین نمره محور', data: avgPerAxis, backgroundColor: '#1565c0' }] },
+                        options: { scales: { y: { beginAtZero: true } } }
+                    });
+
+                    const avgRadarData = axes.map(axis => {
+                        let sum = 0, count = 0;
+                        criteria.filter(c => c.axis === axis && singleEval.enabledCriteria?.includes(c.id)).forEach(c => {
+                            sum += (singleEval.scores[c.id] || 0) / 4 * 100;
+                            count++;
+                        });
+                        return count > 0 ? sum / count : 0;
+                    });
+                    if (document.getElementById('radarChart').getContext('2d').chart) document.getElementById('radarChart').getContext('2d').chart.destroy();
+                    new Chart(document.getElementById('radarChart'), {
+                        type: 'radar',
+                        data: { labels: axes, datasets: [{ label: 'میانگین درصد نمره محورها', data: avgRadarData, fill: true, backgroundColor: 'rgba(21,101,192,0.2)', borderColor: '#1565c0' }] }
+                    });
+
+                    if (document.getElementById('trendChart').getContext('2d').chart) document.getElementById('trendChart').getContext('2d').chart.destroy();
+                    if (document.getElementById('comparisonChart').getContext('2d').chart) document.getElementById('comparisonChart').getContext('2d').chart.destroy();
+
+                    const analysis = generateSmartAnalysis([singleEval], criteria);
+                    const table = document.createElement('table');
+                    table.innerHTML = '<thead><tr><th>خلاصه</th><th>راهبردی</th><th>روانشناسی</th><th>راه حل</th></tr></thead><tbody><tr><td>' + analysis.summary + '</td><td>' + analysis.strategic + '</td><td>' + analysis.psychology + '</td><td>' + analysis.solution + '</td></tr></tbody>';
+                    document.getElementById('smartAnalysis').innerHTML = '';
+                    document.getElementById('smartAnalysis').appendChild(table);
+                });
+            });
+        }
+
+        function loadSelectForAnalysis() {
+            getAllFromStore('evaluations').then(evals => {
+                const select = document.getElementById('selectEvalForAnalysis');
+                select.innerHTML = '<option value="">همه</option>';
+                evals.forEach(e => {
+                    const option = document.createElement('option');
+                    option.value = e.id;
+                    option.textContent = `${e.managerName} (${e.personnelCode}) - ${e.schoolName}`;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        function generateSmartAnalysis(evals, criteria) {
+            let summary = '', strategic = '', psychology = '', solution = '';
+            // سطح بندی امتیازات
+            const levelAnalyses = {
+                high: ['عملکرد عالی', 'ادامه روند فعلی', 'انگیزش بالا', 'بهینه سازی جزئی'],
+                medium: ['عملکرد متوسط', 'بهبود تدریجی', 'انگیزش متوسط', 'تمرکز روی نقاط ضعف'],
+                low: ['عملکرد ضعیف', 'اصلاح اساسی', 'انگیزش پایین', 'برنامه ریزی مجدد']
+            };
+            const averageScore = evals.reduce((sum, e) => sum + e.finalScore, 0) / evals.length;
+            let level;
+            if (averageScore > 75) level = 'high';
+            else if (averageScore >= 50) level = 'medium';
+            else level = 'low';
+            summary = levelAnalyses[level][0];
+            strategic = levelAnalyses[level][1];
+            psychology = levelAnalyses[level][2];
+            solution = levelAnalyses[level][3];
+            return { summary, strategic, psychology, solution };
+        }
+
+        function generateRecommendations(weaknesses, criteria) {
+            let recs = [];
+            weaknesses.forEach(w => {
+                recs.push(`بهبود ${w}`);
+            });
+            return recs;
+        }
+
+        function generateTrends(evals) {
+            let trends = [];
+            const sorted = evals.sort((a,b) => new Date(a.savedAt) - new Date(b.savedAt));
+            for (let i = 1; i < sorted.length; i++) {
+                const diff = sorted[i].finalScore - sorted[i-1].finalScore;
+                if (diff > 0) trends.push(`افزایش ${diff.toFixed(2)} از ${gregorianToJalali(new Date(sorted[i-1].savedAt))} به ${gregorianToJalali(new Date(sorted[i].savedAt))}`);
+                else if (diff < 0) trends.push(`کاهش ${Math.abs(diff).toFixed(2)} از ${gregorianToJalali(new Date(sorted[i-1].savedAt))} به ${gregorianToJalali(new Date(sorted[i].savedAt))}`);
+            }
+            return trends;
+        }
+
+        function checkEarlyWarnings(evals, criteria) {
+            let warnings = [];
+            evals.forEach(e => {
+                criteria.forEach(c => {
+                    if (c.axis.toLowerCase().includes('safety') && e.scores[c.id] < 2) warnings.push(`هشدار ایمنی پایین در ${e.managerName} (${e.schoolName})`);
+                });
+                if (Object.values(e.scores).filter(s => s < 2).length > 3) warnings.push(`ریسک بالا در ${e.managerName} (${e.schoolName}) - نیاز به بررسی فوری`);
+            });
+            return warnings;
+        }
+
+        function calculateAxisScore(evalData, criteria, axis) {
+            let sum = 0, count = 0;
+            criteria.filter(c => c.axis === axis && evalData.enabledCriteria?.includes(c.id)).forEach(c => {
+                sum += evalData.scores[c.id] || 0;
+                count++;
+            });
+            return count > 0 ? sum / count : 0;
+        }
+
+        function getWeakAxes(evalData, criteria) {
+            const axes = [...new Set(criteria.map(c => c.axis))];
+            return axes.filter(axis => calculateAxisScore(evalData, criteria, axis) < 2);
+        }
+
+        // Ranking
+        function loadRankingFilters() {
+            getAllFromStore('evaluations').then(evals => {
+                const managementSelect = document.getElementById('rankManagementType');
+                const courseSelect = document.getElementById('rankCourseType');
+                const genderSelect = document.getElementById('rankGender');
+                const areaSelect = document.getElementById('rankAreaType');
+                managementSelect.innerHTML = '<option value="">نوع مدیریت</option>';
+                courseSelect.innerHTML = '<option value="">نوع دوره</option>';
+                genderSelect.innerHTML = '<option value="">جنسیت</option>';
+                areaSelect.innerHTML = '<option value="">نوع منطقه</option>';
+                const managementTypes = [...new Set(evals.map(e => e.managementType))];
+                managementTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type;
+                    managementSelect.appendChild(option);
+                });
+                const courseTypes = ['کودکستان', 'ابتدایی', 'متوسطه اول', 'متوسطه دوم', 'هنرستان', 'کانون', 'دارالقرآن', 'استثنائات', 'ناحیه', 'استان', 'سایر'];
+                courseTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type;
+                    courseSelect.appendChild(option);
+                });
+                const genders = ['پسر', 'دختر', 'مختلط'];
+                genders.forEach(gender => {
+                    const option = document.createElement('option');
+                    option.value = gender;
+                    option.textContent = gender;
+                    genderSelect.appendChild(option);
+                });
+                const areaTypes = [...new Set(evals.map(e => e.areaType))];
+                areaTypes.forEach(area => {
+                    const option = document.createElement('option');
+                    option.value = area;
+                    option.textContent = area;
+                    areaSelect.appendChild(option);
+                });
+            });
+        }
+
+        function applyRankingFilters() {
+            getAllFromStore('evaluations').then(evals => {
+                let filteredEvals = evals;
+                const management = document.getElementById('rankManagementType').value;
+                const course = document.getElementById('rankCourseType').value;
+                const gender = document.getElementById('rankGender').value;
+                const area = document.getElementById('rankAreaType').value;
+                if (management) filteredEvals = filteredEvals.filter(e => e.managementType === management);
+                if (course) filteredEvals = filteredEvals.filter(e => e.courseType === course);
+                if (gender) filteredEvals = filteredEvals.filter(e => e.gender === gender);
+                if (area) filteredEvals = filteredEvals.filter(e => e.areaType === area);
+                filteredEvals.sort((a, b) => b.finalScore - a.finalScore);
+                const tbody = document.getElementById('rankingTable').querySelector('tbody');
+                tbody.innerHTML = '';
+                filteredEvals.forEach(e => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${e.managerName}</td><td>${e.personnelCode}</td><td>${e.schoolName}</td><td>${e.finalScore.toFixed(2)}</td>`;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        function exportRankingToExcel() {
+            getAllFromStore('evaluations').then(evals => {
+                getAllFromStore('criteria').then(criteria => {
+                    let filteredEvals = evals;
+                    const management = document.getElementById('rankManagementType').value;
+                    const course = document.getElementById('rankCourseType').value;
+                    const gender = document.getElementById('rankGender').value;
+                    const area = document.getElementById('rankAreaType').value;
+                    if (management) filteredEvals = filteredEvals.filter(e => e.managementType === management);
+                    if (course) filteredEvals = filteredEvals.filter(e => e.courseType === course);
+                    if (gender) filteredEvals = filteredEvals.filter(e => e.gender === gender);
+                    if (area) filteredEvals = filteredEvals.filter(e => e.areaType === area);
+                    filteredEvals.sort((a, b) => b.finalScore - a.finalScore);
+                    const data = filteredEvals.map(e => {
+                        const row = {
+                            'نام مدیر': e.managerName,
+                            'کد پرسنلی': e.personnelCode,
+                            'نام مدرسه': e.schoolName,
+                            'نوع مدیریت': e.managementType,
+                            'جنسیت': e.gender,
+                            'کد مدرسه': e.schoolCode,
+                            'نوع منطقه': e.areaType,
+                            'تلفن': e.phone,
+                            'مدرک تحصیلی': e.educationDegree,
+                            'سنوات خدمت': e.serviceYears,
+                            'سنوات مدیریت': e.managementYears,
+                            'تعداد دانش آموزان': e.studentCount,
+                            'تعداد پرسنل': e.staffCount,
+                            'نوع دوره': e.courseType,
+                            'تاریخ بازدید': e.visitDate,
+                            'نمره نهایی': e.finalScore.toFixed(2),
+                            'ذخیره‌شده در': gregorianToJalali(new Date(e.savedAt)),
+                            'لوکیشن': e.location,
+                            'عکس': e.photo ? 'بله' : 'خیر',
+                            'صدا': e.audio ? 'بله' : 'خیر'
+                        };
+                        criteria.forEach(c => {
+                            if (e.scores[c.id]) {
+                                row[`نمره ${c.title}`] = e.scores[c.id];
+                                row[`یادداشت ${c.title}`] = e.notes[c.id] || '';
+                            }
+                        });
+                        e.companions.forEach((comp, i) => {
+                            row[`همراه ${i+1} نام`] = comp.name;
+                            row[`همراه ${i+1} کد`] = comp.code;
+                            row[`همراه ${i+1} امضا`] = 'بله';
+                        });
+                        row['امضای بازرس'] = 'بله';
+                        row['امضای مدیر'] = 'بله';
+                        return row;
+                    });
+                    const ws = XLSX.utils.json_to_sheet(data);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'رتبه‌بندی');
+                    XLSX.writeFile(wb, 'ranking.xlsx');
+                });
+            });
+        }
+
+        function printRanking() {
+            const content = document.getElementById('rankingTable').outerHTML;
+            const printWindow = window.open('', '', 'height=500, width=800');
+            printWindow.document.write('<html><head><title>پرینت رتبه‌بندی</title>');
+            printWindow.document.write('<style>table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid black; padding: 8px; text-align: right; }</style>');
+            printWindow.document.write('</head><body >');
+            printWindow.document.write(content);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        // PDF Table
+        function loadPdfTable() {
+            getAllFromStore('evaluations').then(evals => {
+                const tbody = document.getElementById('pdfTable').querySelector('tbody');
+                tbody.innerHTML = '';
+                evals.forEach(e => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${e.managerName}</td><td>${e.personnelCode}</td><td>${e.schoolName}</td><td><button onclick="exportPdf(${e.id})">دانلود PDF</button></td>`;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        // Reports
+        function loadReports() {
+            getAllFromStore('evaluations').then(evals => {
+                allEvals = evals;
+                loadReportFilters();
+                applyReportFilterAndSort();
+            });
+        }
+
+        function loadReportFilters() {
+            const genderSelect = document.getElementById('reportGenderFilter');
+            const areaSelect = document.getElementById('reportAreaFilter');
+            const courseSelect = document.getElementById('reportCourseFilter');
+            genderSelect.innerHTML = '<option value="">جنسیت</option>';
+            areaSelect.innerHTML = '<option value="">نوع منطقه</option>';
+            courseSelect.innerHTML = '<option value="">نوع دوره</option>';
+            const genders = ['پسر', 'دختر', 'مختلط'];
+            genders.forEach(gender => {
+                const option = document.createElement('option');
+                option.value = gender;
+                option.textContent = gender;
+                genderSelect.appendChild(option);
+            });
+            const areas = [...new Set(allEvals.map(e => e.areaType))];
+            areas.forEach(area => {
+                const option = document.createElement('option');
+                option.value = area;
+                option.textContent = area;
+                areaSelect.appendChild(option);
+            });
+            const courses = ['کودکستان', 'ابتدایی', 'متوسطه اول', 'متوسطه دوم', 'هنرستان', 'کانون', 'دارالقرآن', 'استثنائات', 'ناحیه', 'استان', 'سایر'];
+            courses.forEach(course => {
+                const option = document.createElement('option');
+                option.value = course;
+                option.textContent = course;
+                courseSelect.appendChild(option);
+            });
+        }
+
+        function applyReportFilterAndSort() {
+            let filteredEvals = allEvals;
+            const filter = document.getElementById('reportFilter').value.toLowerCase();
+            if (filter) {
+                filteredEvals = filteredEvals.filter(e => e.managerName.toLowerCase().includes(filter) || e.personnelCode.includes(filter) || e.schoolName.toLowerCase().includes(filter));
+            }
+            const gender = document.getElementById('reportGenderFilter').value;
+            const area = document.getElementById('reportAreaFilter').value;
+            const course = document.getElementById('reportCourseFilter').value;
+            if (gender) filteredEvals = filteredEvals.filter(e => e.gender === gender);
+            if (area) filteredEvals = filteredEvals.filter(e => e.areaType === area);
+            if (course) filteredEvals = filteredEvals.filter(e => e.courseType === course);
+            const sort = document.getElementById('reportSort').value;
+            if (sort === 'score_desc') filteredEvals.sort((a, b) => b.finalScore - a.finalScore);
+            if (sort === 'score_asc') filteredEvals.sort((a, b) => a.finalScore - b.finalScore);
+            if (sort === 'management') filteredEvals.sort((a, b) => a.managementType.localeCompare(b.managementType));
+            if (sort === 'name_asc') filteredEvals.sort((a, b) => a.managerName.localeCompare(b.managerName));
+            if (sort === 'name_desc') filteredEvals.sort((a, b) => b.managerName.localeCompare(a.managerName));
+            const tbody = document.getElementById('reportsTable').querySelector('tbody');
+            tbody.innerHTML = '';
+            filteredEvals.forEach(e => {
+                const tr = document.createElement('tr');
+                const shamsiDate = gregorianToJalali(new Date(e.savedAt));
+                tr.innerHTML = `<td>${e.managerName}</td><td>${e.personnelCode}</td><td>${e.schoolName}</td><td>${e.managementType}</td><td>${e.courseType}</td><td>${e.finalScore.toFixed(2)}</td><td>${shamsiDate}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function exportReportsToExcel() {
+            getAllFromStore('evaluations').then(evals => {
+                getAllFromStore('criteria').then(criteria => {
+                    const data = evals.map(e => {
+                        const row = {
+                            'نام مدیر': e.managerName,
+                            'کد پرسنلی': e.personnelCode,
+                            'نام مدرسه': e.schoolName,
+                            'نوع مدیریت': e.managementType,
+                            'جنسیت': e.gender,
+                            'کد مدرسه': e.schoolCode,
+                            'نوع منطقه': e.areaType,
+                            'تلفن': e.phone,
+                            'مدرک تحصیلی': e.educationDegree,
+                            'سنوات خدمت': e.serviceYears,
+                            'سنوات مدیریت': e.managementYears,
+                            'تعداد دانش آموزان': e.studentCount,
+                            'تعداد پرسنل': e.staffCount,
+                            'نوع دوره': e.courseType,
+                            'تاریخ بازدید': e.visitDate,
+                            'نمره نهایی': e.finalScore.toFixed(2),
+                            'ذخیره‌شده در': gregorianToJalali(new Date(e.savedAt)),
+                            'لوکیشن': e.location,
+                            'عکس': e.photo ? 'بله' : 'خیر',
+                            'صدا': e.audio ? 'بله' : 'خیر'
+                        };
+                        criteria.forEach(c => {
+                            if (e.scores[c.id]) {
+                                row[`نمره ${c.title}`] = e.scores[c.id];
+                                row[`یادداشت ${c.title}`] = e.notes[c.id] || '';
+                            }
+                        });
+                        e.companions.forEach((comp, i) => {
+                            row[`همراه ${i+1} نام`] = comp.name;
+                            row[`همراه ${i+1} کد`] = comp.code;
+                            row[`همراه ${i+1} امضا`] = 'بله';
+                        });
+                        row['امضای بازرس'] = 'بله';
+                        row['امضای مدیر'] = 'بله';
+                        return row;
+                    });
+                    const ws = XLSX.utils.json_to_sheet(data);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'گزارش‌ها');
+                    XLSX.writeFile(wb, 'reports.xlsx');
+                });
+            });
+        }
+
+        function exportReportsToPdf() {
+            const element = document.getElementById('reportsTable');
+            const opt = {
+                margin: 0.2,
+                filename: 'reports.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            };
+            html2pdf().from(element).set(opt).save();
+        }
+
+        // Smart Search
+        function searchTable(tableId, inputId) {
+            const input = document.getElementById(inputId).value.toLowerCase();
+            const table = document.getElementById(tableId);
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(input) ? '' : 'none';
+            });
+        }
+
+        function gregorianToJalali(date) {
+            let g_y = date.getFullYear(), g_m = date.getMonth() + 1, g_d = date.getDate();
+            let g_days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+            let j_days_in_month = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
+            let gy = g_y - 1600;
+            let gm = g_m - 1;
+            let gd = g_d - 1;
+            let g_day_no = 365 * gy + Math.floor((gy + 3) / 4) - Math.floor((gy + 99) / 100) + Math.floor((gy + 399) / 400);
+            for (let i = 0; i < gm; ++i) g_day_no += g_days_in_month[i];
+            if (gm > 1 && ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0))) ++g_day_no;
+            g_day_no += gd;
+            let j_day_no = g_day_no - 79;
+            let j_np = Math.floor(j_day_no / 12053);
+            j_day_no %= 12053;
+            let jy = 979 + 33 * j_np + 4 * Math.floor(j_day_no / 1461);
+            j_day_no %= 1461;
+            if (j_day_no >= 366) {
+                jy += Math.floor((j_day_no - 1) / 365);
+                j_day_no = (j_day_no - 1) % 365;
+            }
+            let i = 0;
+            for (; i < 11 && j_day_no >= j_days_in_month[i]; ++i) j_day_no -= j_days_in_month[i];
+            let jm = i + 1;
+            let jd = j_day_no + 1;
+            return `${jy}/${jm.toString().padStart(2, '0')}/${jd.toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        function loadDashboardStats() {
+            getAllFromStore('users').then(users => {
+                document.getElementById('userCount').textContent = `تعداد کاربران: ${users.length}`;
+            });
+            getAllFromStore('evaluations').then(evals => {
+                document.getElementById('evalCount').textContent = `تعداد ارزیابی‌ها: ${evals.length}`;
+                if (evals.length > 0) {
+                    const avgScore = evals.reduce((sum, e) => sum + e.finalScore, 0) / evals.length;
+                    document.getElementById('avgScore').textContent = `میانگین نمرات: ${avgScore.toFixed(2)}`;
+                    const good = evals.filter(e => e.finalScore > 75).length;
+                    const medium = evals.filter(e => e.finalScore >= 50 && e.finalScore <= 75).length;
+                    const poor = evals.filter(e => e.finalScore < 50).length;
+                    document.getElementById('statusSummary').textContent = `وضعیت: خوب ${good}، متوسط ${medium}، ضعیف ${poor}`;
+                }
+            });
+        }
+
+        initDB();
+    </script>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyCtFnXwQbwcCjSdeI0Ac2oTH6MykJcY4TU",
+    authDomain: "arzyabi-9be0a.firebaseapp.com",
+    projectId: "arzyabi-9be0a",
+    storageBucket: "arzyabi-9be0a.firebasestorage.app",
+    messagingSenderId: "404465689170",
+    appId: "1:404465689170:web:589bdb262b2a445ae7f58b",
+    measurementId: "G-22F00LXKE9"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+</body>
+</html>
